@@ -1,0 +1,180 @@
+# One-file Kubernetes deployment for Apex Motors.
+# Images are published under Docker Hub account: shekhar013
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: carshop
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: carshop-config
+  namespace: carshop
+data:
+  CAR_URL: http://car-service:5001
+  BOOKING_URL: http://booking-service:5002
+  CONTACT_URL: http://contact-service:5003
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: booking-data
+  namespace: carshop
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard-rwo
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: contact-data
+  namespace: carshop
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard-rwo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: car-service
+  namespace: carshop
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: car-service}
+  template:
+    metadata:
+      labels: {app: car-service}
+    spec:
+      containers:
+      - name: car-service
+        image: docker.io/shekhar013/carshop-car-service:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports: [{containerPort: 5001}]
+        readinessProbe: {httpGet: {path: /health, port: 5001}, initialDelaySeconds: 3, periodSeconds: 10}
+        livenessProbe: {httpGet: {path: /health, port: 5001}, initialDelaySeconds: 10, periodSeconds: 20}
+        resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: 500m, memory: 256Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: car-service
+  namespace: carshop
+spec:
+  selector: {app: car-service}
+  ports: [{port: 5001, targetPort: 5001}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: booking-service
+  namespace: carshop
+spec:
+  # SQLite plus a ReadWriteOnce volume requires a single writer.
+  replicas: 1
+  selector:
+    matchLabels: {app: booking-service}
+  template:
+    metadata:
+      labels: {app: booking-service}
+    spec:
+      securityContext: {fsGroup: 10001, fsGroupChangePolicy: OnRootMismatch}
+      containers:
+      - name: booking-service
+        image: docker.io/shekhar013/carshop-booking-service:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports: [{containerPort: 5002}]
+        env: [{name: DB_PATH, value: /data/bookings.db}]
+        volumeMounts: [{name: data, mountPath: /data}]
+        readinessProbe: {httpGet: {path: /health, port: 5002}, initialDelaySeconds: 5, periodSeconds: 10}
+        livenessProbe: {httpGet: {path: /health, port: 5002}, initialDelaySeconds: 15, periodSeconds: 20}
+        resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: 500m, memory: 256Mi}}
+      volumes:
+      - name: data
+        persistentVolumeClaim: {claimName: booking-data}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: booking-service
+  namespace: carshop
+spec:
+  selector: {app: booking-service}
+  ports: [{port: 5002, targetPort: 5002}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contact-service
+  namespace: carshop
+spec:
+  # SQLite plus a ReadWriteOnce volume requires a single writer.
+  replicas: 1
+  selector:
+    matchLabels: {app: contact-service}
+  template:
+    metadata:
+      labels: {app: contact-service}
+    spec:
+      securityContext: {fsGroup: 10001, fsGroupChangePolicy: OnRootMismatch}
+      containers:
+      - name: contact-service
+        image: docker.io/shekhar013/carshop-contact-service:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports: [{containerPort: 5003}]
+        env: [{name: DB_PATH, value: /data/contact.db}]
+        volumeMounts: [{name: data, mountPath: /data}]
+        readinessProbe: {httpGet: {path: /health, port: 5003}, initialDelaySeconds: 5, periodSeconds: 10}
+        livenessProbe: {httpGet: {path: /health, port: 5003}, initialDelaySeconds: 15, periodSeconds: 20}
+        resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: 500m, memory: 256Mi}}
+      volumes:
+      - name: data
+        persistentVolumeClaim: {claimName: contact-data}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: contact-service
+  namespace: carshop
+spec:
+  selector: {app: contact-service}
+  ports: [{port: 5003, targetPort: 5003}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: carshop
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: frontend}
+  template:
+    metadata:
+      labels: {app: frontend}
+    spec:
+      containers:
+      - name: frontend
+        image: docker.io/shekhar013/carshop-frontend:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports: [{containerPort: 8080}]
+        envFrom: [{configMapRef: {name: carshop-config}}]
+        readinessProbe: {httpGet: {path: /ready, port: 8080}, initialDelaySeconds: 8, periodSeconds: 10}
+        livenessProbe: {httpGet: {path: /health, port: 8080}, initialDelaySeconds: 20, periodSeconds: 20}
+        resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: 500m, memory: 256Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-external
+  namespace: carshop
+spec:
+  type: LoadBalancer
+  selector: {app: frontend}
+  ports: [{port: 80, targetPort: 8080}]

@@ -1,0 +1,67 @@
+# Default configuration for the RideGo Helm release.
+# Publish the application images first, then override these repositories/tags as needed.
+imagePullSecrets: []
+
+frontend:
+  replicaCount: 2
+  image:
+    repository: docker.io/shekhar013/carshop-frontend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: LoadBalancer
+    port: 80
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
+rideService:
+  replicaCount: 2
+  image:
+    repository: docker.io/shekhar013/carshop-car-service
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
+bookingService:
+  # Keep this at one replica while it uses SQLite on a ReadWriteOnce PVC.
+  replicaCount: 1
+  image:
+    repository: docker.io/shekhar013/carshop-booking-service
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  persistence:
+    size: 1Gi
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
+contactService:
+  # Keep this at one replica while it uses SQLite on a ReadWriteOnce PVC.
+  replicaCount: 1
+  image:
+    repository: docker.io/shekhar013/carshop-contact-service
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  persistence:
+    size: 1Gi
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: ridego.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []

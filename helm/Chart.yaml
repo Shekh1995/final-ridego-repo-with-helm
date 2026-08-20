@@ -1,0 +1,12 @@
+apiVersion: v2
+name: ridego
+description: A cloud-native, Rapido-inspired ride-booking application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - ride-booking
+  - flask
+  - microservices
+maintainers:
+  - name: RideGo Team

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: carshop-config, namespace: carshop}
+data:
+  CAR_URL: http://car-service:5001
+  BOOKING_URL: http://booking-service:5002
+  CONTACT_URL: http://contact-service:5003

@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: booking-service, namespace: carshop}
+spec:
+  # SQLite uses a ReadWriteOnce volume, so this service must have one writer.
+  replicas: 1
+  selector: {matchLabels: {app: booking-service}}
+  template:
+    metadata: {labels: {app: booking-service}}
+    spec:
+      containers:
+      - name: booking-service
+        image: DOCKERHUB_USER/carshop-booking-service:latest
+        imagePullPolicy: Always
+        ports: [{containerPort: 5002}]
+        envFrom: [{configMapRef: {name: carshop-config}}]
+        env: [{name: DB_PATH, value: /data/bookings.db}]
+        readinessProbe: {httpGet: {path: /health, port: 5002}, initialDelaySeconds: 5, periodSeconds: 10}
+        livenessProbe: {httpGet: {path: /health, port: 5002}, initialDelaySeconds: 15, periodSeconds: 20}
+        volumeMounts:
+        - {name: data, mountPath: /data}
+      volumes:
+      - {name: data, persistentVolumeClaim: {claimName: booking-data}}
+      securityContext: {fsGroup: 10001, fsGroupChangePolicy: OnRootMismatch}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: booking-service, namespace: carshop}
+spec:
+  selector: {app: booking-service}
+  ports: [{port: 5002, targetPort: 5002}]

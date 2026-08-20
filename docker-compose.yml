@@ -1,0 +1,20 @@
+services:
+  frontend:
+    build: ./services/frontend
+    ports: ["8080:8080"]
+    environment:
+      CAR_URL: http://car-service:5001
+      BOOKING_URL: http://booking-service:5002
+      CONTACT_URL: http://contact-service:5003
+    depends_on: [car-service, booking-service, contact-service]
+  car-service:
+    build: ./services/car-service
+  booking-service:
+    build: ./services/booking-service
+    volumes: [booking-data:/data]
+  contact-service:
+    build: ./services/contact-service
+    volumes: [contact-data:/data]
+volumes:
+  booking-data:
+  contact-data:

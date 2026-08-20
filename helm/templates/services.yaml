@@ -1,0 +1,37 @@
+{{- $root := . }}
+{{- range $service := list (dict "name" "ride" "port" 5001) (dict "name" "booking" "port" 5002) (dict "name" "contact" "port" 5003) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ridego.fullname" $root }}-{{ $service.name }}
+  labels:
+    {{- include "ridego.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $service.name }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "ridego.selectorLabels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $service.name }}
+  ports:
+    - name: http
+      port: {{ $service.port }}
+      targetPort: http
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ridego.fullname" . }}-frontend
+  labels:
+    {{- include "ridego.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  type: {{ .Values.frontend.service.type }}
+  selector:
+    {{- include "ridego.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+  ports:
+    - name: http
+      port: {{ .Values.frontend.service.port }}
+      targetPort: http

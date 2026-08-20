@@ -1,0 +1,10 @@
+RideGo has been installed.
+
+{{- if eq .Values.frontend.service.type "LoadBalancer" }}
+Wait for an external IP, then open it in your browser:
+  kubectl get service --namespace {{ .Release.Namespace }} {{ include "ridego.fullname" . }}-frontend --watch
+{{- else }}
+Use port-forwarding for local access:
+  kubectl port-forward --namespace {{ .Release.Namespace }} service/{{ include "ridego.fullname" . }}-frontend 8080:{{ .Values.frontend.service.port }}
+Then open http://127.0.0.1:8080
+{{- end }}

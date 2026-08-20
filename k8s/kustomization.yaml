@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- namespace.yaml
+- configmap.yaml
+- frontend.yaml
+- car-service.yaml
+- booking-service.yaml
+- contact-service.yaml
+- booking-pvc.yaml
+images:
+- name: DOCKERHUB_USER/carshop-frontend
+  newName: docker.io/shekhar013/carshop-frontend
+  newTag: 1.0.0
+- name: DOCKERHUB_USER/carshop-car-service
+  newName: docker.io/shekhar013/carshop-car-service
+  newTag: 1.0.0
+- name: DOCKERHUB_USER/carshop-booking-service
+  newName: docker.io/shekhar013/carshop-booking-service
+  newTag: 1.0.0
+- name: DOCKERHUB_USER/carshop-contact-service
+  newName: docker.io/shekhar013/carshop-contact-service
+  newTag: 1.0.0

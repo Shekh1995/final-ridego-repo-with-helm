@@ -1,0 +1,18 @@
+{{- range $service := list (dict "name" "booking" "value" .Values.bookingService) (dict "name" "contact" "value" .Values.contactService) }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "ridego.fullname" $ }}-{{ $service.name }}
+  labels:
+    {{- include "ridego.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $service.name }}
+spec:
+  accessModes: {{ toYaml $service.value.persistence.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ $service.value.persistence.size }}
+  {{- with $service.value.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+{{- end }}

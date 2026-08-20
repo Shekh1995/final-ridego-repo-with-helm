@@ -1,0 +1,47 @@
+.git/
+.DS_Store
+*.tgz
+*.tmp
+*** Add File: C:\Users\Hp\Documents\ChatGPT\cloud-devops\helm\ridego\values.yaml
+# Override image.repository and image.tag after publishing your own images.
+imagePullSecrets: []
+
+frontend:
+  replicaCount: 2
+  image: { repository: docker.io/shekhar013/carshop-frontend, tag: "1.0.0", pullPolicy: IfNotPresent }
+  service: { type: LoadBalancer, port: 80 }
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
+rideService:
+  replicaCount: 2
+  image: { repository: docker.io/shekhar013/carshop-car-service, tag: "1.0.0", pullPolicy: IfNotPresent }
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
+bookingService:
+  replicaCount: 1 # SQLite with ReadWriteOnce storage has a single writer.
+  image: { repository: docker.io/shekhar013/carshop-booking-service, tag: "1.0.0", pullPolicy: IfNotPresent }
+  persistence: { size: 1Gi, storageClass: "", accessModes: [ReadWriteOnce] }
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
+contactService:
+  replicaCount: 1 # SQLite with ReadWriteOnce storage has a single writer.
+  image: { repository: docker.io/shekhar013/carshop-contact-service, tag: "1.0.0", pullPolicy: IfNotPresent }
+  persistence: { size: 1Gi, storageClass: "", accessModes: [ReadWriteOnce] }
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: ridego.local
+      paths: [{ path: /, pathType: Prefix }]
+  tls: []
